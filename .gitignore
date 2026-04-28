@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+local_test_result.jpg
+runs/
+.idea/
+.vscode/
+.DS_Store
