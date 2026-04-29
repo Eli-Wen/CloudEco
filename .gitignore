@@ -8,3 +8,14 @@ runs/
 .idea/
 .vscode/
 .DS_Store
+# Terraform local state and secrets
+infra/keys/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/.terraform.lock.hcl
+infra/terraform/terraform.tfvars
+# Terraform logs and plans
+infra/terraform/crash.log
+infra/terraform/crash.*.log
+infra/terraform/*.tfplan
