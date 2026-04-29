@@ -4,6 +4,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV YOLO_CONFIG_DIR=/tmp/ultralytics
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
@@ -17,6 +18,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY app ./app
 COPY model ./model
+
+RUN useradd --create-home --shell /bin/bash appuser && \
+    mkdir -p /tmp/ultralytics && \
+    chown -R appuser:appuser /app /tmp/ultralytics
+
+USER appuser
 
 EXPOSE 8000
 
