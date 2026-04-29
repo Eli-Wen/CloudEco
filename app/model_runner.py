@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+import base64
 
 import cv2
 import numpy as np
@@ -22,8 +23,6 @@ model_runner = ModelRunner()
 
 
 def decode_base64_image(image_b64: str) -> np.ndarray:
-    import base64
-
     image_bytes = base64.b64decode(image_b64)
     np_buffer = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(np_buffer, cv2.IMREAD_COLOR)
@@ -32,3 +31,10 @@ def decode_base64_image(image_b64: str) -> np.ndarray:
         raise ValueError("Invalid image data after base64 decoding")
 
     return image
+
+
+def encode_image_to_base64(image: np.ndarray) -> str:
+    success, buffer = cv2.imencode(".jpg", image)
+    if not success:
+        raise ValueError("Failed to encode annotated image")
+    return base64.b64encode(buffer.tobytes()).decode("utf-8")

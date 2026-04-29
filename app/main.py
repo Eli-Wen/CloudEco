@@ -1,6 +1,10 @@
 from fastapi import FastAPI, HTTPException
 
-from app.model_runner import decode_base64_image, model_runner
+from app.model_runner import (
+    decode_base64_image,
+    encode_image_to_base64,
+    model_runner,
+)
 from app.schemas import PredictRequest
 
 app = FastAPI(title="CloudEco Wildfire Detection API")
@@ -47,4 +51,20 @@ def predict(request: PredictRequest):
         "speed_preprocess_ms": result.speed.get("preprocess", 0.0),
         "speed_inference_ms": result.speed.get("inference", 0.0),
         "speed_postprocess_ms": result.speed.get("postprocess", 0.0),
+    }
+
+
+@app.post("/api/annotate")
+def annotate(request: PredictRequest):
+    try:
+        image = decode_base64_image(request.image)
+        result = model_runner.predict_from_array(image)
+        annotated_image = result.plot()
+        annotated_base64 = encode_image_to_base64(annotated_image)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {
+        "uuid": request.uuid,
+        "image": annotated_base64
     }
