@@ -5,7 +5,7 @@ from app.model_runner import (
     encode_image_to_base64,
     model_runner,
 )
-from app.schemas import PredictRequest
+from app.schemas import PredictRequest, PredictResponse, AnnotateResponse
 
 app = FastAPI(title="CloudEco Wildfire Detection API")
 
@@ -15,8 +15,8 @@ def root():
     return {"message": "CloudEco API is running"}
 
 
-@app.post("/api/predict")
-def predict(request: PredictRequest):
+@app.post("/api/predict", response_model=PredictResponse)
+def predict(request: PredictRequest) -> PredictResponse:
     try:
         image = decode_base64_image(request.image)
         result = model_runner.predict_from_array(image)
@@ -43,19 +43,19 @@ def predict(request: PredictRequest):
                 }
             )
 
-    return {
-        "uuid": request.uuid,
-        "count": len(detections),
-        "detections": detections,
-        "boxes": boxes,
-        "speed_preprocess_ms": result.speed.get("preprocess", 0.0),
-        "speed_inference_ms": result.speed.get("inference", 0.0),
-        "speed_postprocess_ms": result.speed.get("postprocess", 0.0),
-    }
+    return PredictResponse(
+        uuid=request.uuid,
+        count=len(detections),
+        detections=detections,
+        boxes=boxes,
+        speed_preprocess_ms=float(result.speed.get("preprocess", 0.0)),
+        speed_inference_ms=float(result.speed.get("inference", 0.0)),
+        speed_postprocess_ms=float(result.speed.get("postprocess", 0.0)),
+    )
 
 
-@app.post("/api/annotate")
-def annotate(request: PredictRequest):
+@app.post("/api/annotate", response_model=AnnotateResponse)
+def annotate(request: PredictRequest) -> AnnotateResponse:
     try:
         image = decode_base64_image(request.image)
         result = model_runner.predict_from_array(image)
@@ -64,7 +64,7 @@ def annotate(request: PredictRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return {
-        "uuid": request.uuid,
-        "image": annotated_base64
-    }
+    return AnnotateResponse(
+        uuid=request.uuid,
+        image=annotated_base64,
+    )
