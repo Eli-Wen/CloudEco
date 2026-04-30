@@ -13,6 +13,30 @@ You can swap host to worker-2:
 locust -f load_tests/locustfile.py --headless -u 1 -r 1 -t 30s --host http://52.243.56.225:30080
 ```
 
+## Single Benchmark Run
+Use the helper script for one controlled run (does not scale pods):
+
+```powershell
+.\load_tests\run_single_locust_test.ps1 `
+  -HostUrl "http://48.193.42.240:30080" `
+  -Users 4 `
+  -SpawnRate 1 `
+  -RunTime "2m" `
+  -OutputPrefix "pod1_users4"
+```
+
+CSV outputs are written to `load_tests/results/`.
+
+## Kubernetes Scaling Helper
+Use this only when you intentionally switch pod count for benchmark phases:
+
+```powershell
+.\load_tests\scale_k8s_deployment.ps1 -Replicas 1
+.\load_tests\scale_k8s_deployment.ps1 -Replicas 2
+.\load_tests\scale_k8s_deployment.ps1 -Replicas 4
+.\load_tests\scale_k8s_deployment.ps1 -Replicas 8
+```
+
 ## What It Sends
 - `POST /api/predict`
 - `POST /api/annotate`
@@ -22,4 +46,7 @@ Each request includes:
 - `image`: base64 content from `test_assets/image0.jpeg`
 
 ## Next Stage (Benchmark)
-Use this same script for controlled experiments at 1, 2, 4, and 8 pods.
+- Formal experiments must cover `1`, `2`, `4`, and `8` pods.
+- Keep all raw Locust CSV outputs as evidence.
+- Do not treat smoke-test results as final benchmark results.
+- See `load_tests/benchmark_plan.md` for the benchmark workflow.
