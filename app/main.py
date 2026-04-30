@@ -14,6 +14,13 @@ app = FastAPI(title="CloudEco Wildfire Detection API")
 def root():
     return {"message": "CloudEco API is running"}
 
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "model_loaded": model_runner.model is not None,
+    }
+
 
 @app.post("/api/predict", response_model=PredictResponse)
 def predict(request: PredictRequest) -> PredictResponse:
