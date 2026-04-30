@@ -12,6 +12,9 @@ param(
 
     [string]$RunTime = "2m",
 
+    [ValidateSet("predict", "annotate", "mixed")]
+    [string]$EndpointMode = "predict",
+
     [switch]$ScaleFirst
 )
 
@@ -58,7 +61,7 @@ for ($i = 0; $i -lt $userLevels.Count; $i++) {
     Write-Host ""
     Write-Host "========================================"
     Write-Host "Running $outputPrefix"
-    Write-Host "Host=$HostUrl Users=$userLevel SpawnRate=$SpawnRate RunTime=$RunTime"
+    Write-Host "Host=$HostUrl Users=$userLevel SpawnRate=$SpawnRate RunTime=$RunTime EndpointMode=$EndpointMode"
     Write-Host "========================================"
 
     & $singleRunScript `
@@ -66,7 +69,8 @@ for ($i = 0; $i -lt $userLevels.Count; $i++) {
         -Users $userLevel `
         -SpawnRate $SpawnRate `
         -RunTime $RunTime `
-        -OutputPrefix $outputPrefix
+        -OutputPrefix $outputPrefix `
+        -EndpointMode $EndpointMode
 
     Write-Host ""
     Write-Host "Expected raw CSV outputs under: $resultsDir"

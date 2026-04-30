@@ -13,6 +13,9 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]$OutputPrefix
+    ,
+    [ValidateSet("predict", "annotate", "mixed")]
+    [string]$EndpointMode = "predict"
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,8 +34,10 @@ if (-not (Test-Path $resultsDir)) {
 }
 
 Write-Host "Running single Locust test..."
-Write-Host "Host: $HostUrl | Users: $Users | SpawnRate: $SpawnRate | RunTime: $RunTime"
+Write-Host "Host: $HostUrl | Users: $Users | SpawnRate: $SpawnRate | RunTime: $RunTime | EndpointMode: $EndpointMode"
 Write-Host "CSV prefix: $csvPrefixPath"
+
+$env:CLOUDECO_ENDPOINT_MODE = $EndpointMode
 
 locust `
     -f $locustFile `
@@ -42,5 +47,7 @@ locust `
     -t $RunTime `
     --host $HostUrl `
     --csv "$csvPrefixPath"
+
+$env:CLOUDECO_ENDPOINT_MODE = $null
 
 Write-Host "Locust run finished. CSV outputs saved under load_tests/results/."

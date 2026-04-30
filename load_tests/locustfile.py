@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -17,10 +18,20 @@ def _load_test_image_base64() -> str:
 
 
 IMAGE_B64 = _load_test_image_base64()
+ALLOWED_ENDPOINT_MODES = {"predict", "annotate", "mixed"}
 
 
 class CloudEcoUser(HttpUser):
     wait_time = between(0.5, 1.5)
+
+    def on_start(self) -> None:
+        mode = os.getenv("CLOUDECO_ENDPOINT_MODE", "predict").strip().lower()
+        if mode not in ALLOWED_ENDPOINT_MODES:
+            raise ValueError(
+                f"Invalid CLOUDECO_ENDPOINT_MODE='{mode}'. "
+                "Allowed values: predict, annotate, mixed."
+            )
+        self.endpoint_mode = mode
 
     def _payload(self) -> dict:
         return {
@@ -30,6 +41,9 @@ class CloudEcoUser(HttpUser):
 
     @task(2)
     def predict(self) -> None:
+        if self.endpoint_mode == "annotate":
+            return
+
         payload = self._payload()
         with self.client.post(
             "/api/predict",
@@ -69,6 +83,9 @@ class CloudEcoUser(HttpUser):
 
     @task(1)
     def annotate(self) -> None:
+        if self.endpoint_mode == "predict":
+            return
+
         payload = self._payload()
         with self.client.post(
             "/api/annotate",
