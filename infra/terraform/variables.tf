@@ -34,7 +34,13 @@ variable "ssh_public_key_path" {
 }
 
 variable "admin_source_cidr" {
-  description = "Public source IP range allowed to access SSH, Kubernetes API, and NodePort services."
+  description = "Public source IP range allowed to access SSH and Kubernetes API."
+  type        = string
+  default     = "*"
+}
+
+variable "nodeport_source_cidr" {
+  description = "Public source IP range allowed to access Kubernetes NodePort services."
   type        = string
   default     = "*"
 }
