@@ -37,6 +37,23 @@ Use this only when you intentionally switch pod count for benchmark phases:
 .\load_tests\scale_k8s_deployment.ps1 -Replicas 8
 ```
 
+## Pod Ladder Helper (Controlled)
+Run one pod-count ladder at a time with manual stop checkpoints between levels.
+
+1 pod example:
+
+```powershell
+.\load_tests\run_pod_ladder.ps1 -PodCount 1 -HostUrl "http://48.193.42.240:30080" -Users "1,2,4,8" -ScaleFirst
+```
+
+Later 2/4/8 examples:
+
+```powershell
+.\load_tests\run_pod_ladder.ps1 -PodCount 2 -HostUrl "http://48.193.42.240:30080" -Users "1,2,4,8,12,16" -ScaleFirst
+.\load_tests\run_pod_ladder.ps1 -PodCount 4 -HostUrl "http://48.193.42.240:30080" -Users "1,2,4,8,12,16,24" -ScaleFirst
+.\load_tests\run_pod_ladder.ps1 -PodCount 8 -HostUrl "http://48.193.42.240:30080" -Users "1,2,4,8,12,16,24,32" -ScaleFirst
+```
+
 ## What It Sends
 - `POST /api/predict`
 - `POST /api/annotate`
