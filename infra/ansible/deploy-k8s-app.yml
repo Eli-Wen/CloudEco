@@ -1,0 +1,78 @@
+﻿---
+- name: Deploy CloudEco FastAPI application to Kubernetes
+  hosts: master
+  become: false
+  vars:
+    app_namespace: cloudeco
+    acr_server: cloudecoa1sjkfk2lm.azurecr.io
+    manifest_source_dir: ../../k8s
+    manifest_target_dir: /home/azureuser/cloudeco-k8s
+
+  tasks:
+    - name: Ensure Kubernetes manifest directory exists on master
+      ansible.builtin.file:
+        path: "{{ manifest_target_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy Kubernetes manifests to master
+      ansible.builtin.copy:
+        src: "{{ manifest_source_dir }}/"
+        dest: "{{ manifest_target_dir }}/"
+        mode: "0644"
+
+    - name: Apply namespace manifest
+      ansible.builtin.command:
+        cmd: kubectl apply -f "{{ manifest_target_dir }}/namespace.yml"
+      register: namespace_apply
+      changed_when: "'created' in namespace_apply.stdout or 'configured' in namespace_apply.stdout"
+
+    - name: Create or update ACR image pull secret
+      ansible.builtin.shell: |
+        kubectl create secret docker-registry acr-pull-secret \
+          --namespace "{{ app_namespace }}" \
+          --docker-server="{{ acr_server }}" \
+          --docker-username="${ACR_USERNAME}" \
+          --docker-password="${ACR_PASSWORD}" \
+          --dry-run=client -o yaml | kubectl apply -f -
+      environment:
+        ACR_USERNAME: "{{ acr_username }}"
+        ACR_PASSWORD: "{{ acr_password }}"
+      no_log: true
+
+    - name: Apply deployment manifest
+      ansible.builtin.command:
+        cmd: kubectl apply -f "{{ manifest_target_dir }}/deployment.yml"
+      register: deployment_apply
+      changed_when: "'created' in deployment_apply.stdout or 'configured' in deployment_apply.stdout"
+
+    - name: Apply service manifest
+      ansible.builtin.command:
+        cmd: kubectl apply -f "{{ manifest_target_dir }}/service.yml"
+      register: service_apply
+      changed_when: "'created' in service_apply.stdout or 'configured' in service_apply.stdout"
+
+    - name: Wait for CloudEco deployment rollout
+      ansible.builtin.command:
+        cmd: kubectl rollout status deployment/cloudeco-api -n "{{ app_namespace }}" --timeout=300s
+      changed_when: false
+
+    - name: Show CloudEco pods
+      ansible.builtin.command:
+        cmd: kubectl get pods -n "{{ app_namespace }}" -o wide
+      register: pod_status
+      changed_when: false
+
+    - name: Print CloudEco pod status
+      ansible.builtin.debug:
+        var: pod_status.stdout_lines
+
+    - name: Show CloudEco service
+      ansible.builtin.command:
+        cmd: kubectl get svc -n "{{ app_namespace }}" -o wide
+      register: service_status
+      changed_when: false
+
+    - name: Print CloudEco service status
+      ansible.builtin.debug:
+        var: service_status.stdout_lines
