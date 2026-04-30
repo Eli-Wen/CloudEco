@@ -15,6 +15,12 @@ variable "resource_group_name" {
   default     = "rg-cloudeco-a1"
 }
 
+variable "acr_location" {
+  description = "Azure region for the Azure Container Registry."
+  type        = string
+  default     = "southeastasia"
+}
+
 variable "admin_username" {
   description = "Admin username for the Linux VMs."
   type        = string

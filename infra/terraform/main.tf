@@ -6,6 +6,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 }
 
@@ -219,4 +224,20 @@ resource "azurerm_linux_virtual_machine" "node" {
     node = each.key
     role = each.value.role
   })
+}
+
+resource "random_string" "acr_suffix" {
+  length  = 8
+  upper   = false
+  special = false
+}
+
+resource "azurerm_container_registry" "main" {
+  name                = "cloudecoa1${random_string.acr_suffix.result}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.acr_location
+  sku                 = "Basic"
+  admin_enabled       = true
+
+  tags = var.tags
 }

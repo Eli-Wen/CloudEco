@@ -21,3 +21,11 @@ output "ssh_commands" {
     name => "ssh -i ../keys/cloudeco_a1_key ${var.admin_username}@${azurerm_public_ip.node[name].ip_address}"
   }
 }
+
+output "acr_name" {
+  value = azurerm_container_registry.main.name
+}
+
+output "acr_login_server" {
+  value = azurerm_container_registry.main.login_server
+}

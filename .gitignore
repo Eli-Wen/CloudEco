@@ -18,3 +18,5 @@ infra/terraform/terraform.tfvars
 infra/terraform/crash.log
 infra/terraform/crash.*.log
 infra/terraform/*.tfplan
+# Terraform local plan files
+infra/terraform/tfplan
