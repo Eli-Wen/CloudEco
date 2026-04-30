@@ -1,20 +1,50 @@
-\# Ansible Kubernetes Node Preparation
+\# Ansible Kubernetes Automation
 
 
 
-This folder contains the Ansible configuration used to prepare the three Azure VMs for the Kubernetes cluster.
+This folder contains Ansible automation for preparing and creating the CloudEco Kubernetes cluster.
 
 
 
-Terraform provisions the Azure infrastructure. Ansible configures the operating system on each VM by disabling swap, enabling Kubernetes kernel networking, installing containerd, and installing kubeadm, kubelet, and kubectl.
+\## Role in the project
 
 
 
-Run from `infra/ansible`:
+\- Terraform provisions Azure infrastructure: resource group, multi-region VNets, NSGs, public IPs, NICs, VMs, and VNet peerings.
+
+\- Ansible prepares the Ubuntu nodes: swap off, kernel networking, containerd, kubeadm, kubelet, and kubectl.
+
+\- Ansible then initialises the Kubernetes control plane, installs Calico CNI, joins worker nodes, and verifies cluster health.
+
+
+
+This keeps the final workflow reproducible rather than relying on manual SSH configuration.
+
+
+
+\## Files
+
+
+
+\- `inventory.ini`: master and worker node inventory.
+
+\- `prepare-k8s-nodes.yml`: installs containerd and Kubernetes tooling on all nodes.
+
+\- `setup-k8s-cluster.yml`: runs `kubeadm init`, installs Calico, joins workers, and verifies the cluster.
+
+
+
+\## Run order
+
+
+
+From this folder:
 
 
 
 ```bash
 
 ansible-playbook -i inventory.ini prepare-k8s-nodes.yml
+
+ansible-playbook -i inventory.ini setup-k8s-cluster.yml
 

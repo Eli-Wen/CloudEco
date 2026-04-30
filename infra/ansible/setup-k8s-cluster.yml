@@ -1,0 +1,102 @@
+---
+- name: Initialise Kubernetes control plane
+  hosts: master
+  become: true
+  vars:
+    pod_network_cidr: "192.168.0.0/16"
+    calico_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml"
+
+  tasks:
+    - name: Check whether Kubernetes control plane already exists
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadm_admin_conf
+
+    - name: Initialise Kubernetes control plane
+      command: >
+        kubeadm init
+        --apiserver-advertise-address={{ private_ip }}
+        --pod-network-cidr={{ pod_network_cidr }}
+      when: not kubeadm_admin_conf.stat.exists
+
+    - name: Create kubeconfig directory for azureuser
+      file:
+        path: /home/azureuser/.kube
+        state: directory
+        owner: azureuser
+        group: azureuser
+        mode: "0755"
+
+    - name: Copy admin kubeconfig for azureuser
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/azureuser/.kube/config
+        remote_src: true
+        owner: azureuser
+        group: azureuser
+        mode: "0600"
+
+    - name: Install Calico CNI
+      become_user: azureuser
+      shell: kubectl apply -f {{ calico_manifest_url }}
+      environment:
+        KUBECONFIG: /home/azureuser/.kube/config
+      register: calico_apply
+      changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
+
+    - name: Generate fresh worker join command
+      command: kubeadm token create --print-join-command
+      register: kubeadm_join_command
+      changed_when: false
+
+    - name: Store worker join command as host fact
+      set_fact:
+        worker_join_command: "{{ kubeadm_join_command.stdout }}"
+
+- name: Join worker nodes to Kubernetes cluster
+  hosts: workers
+  become: true
+
+  tasks:
+    - name: Check whether worker has already joined the cluster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join worker to the Kubernetes cluster
+      command: "{{ hostvars[groups['master'][0]].worker_join_command }}"
+      when: not kubelet_conf.stat.exists
+
+- name: Verify Kubernetes cluster from master
+  hosts: master
+  become: false
+
+  tasks:
+    - name: Wait for all nodes to be registered
+      shell: kubectl get nodes --no-headers | wc -l
+      register: node_count
+      retries: 20
+      delay: 15
+      until: node_count.stdout | int >= 3
+      environment:
+        KUBECONFIG: /home/azureuser/.kube/config
+
+    - name: Show Kubernetes nodes
+      command: kubectl get nodes -o wide
+      register: nodes_output
+      environment:
+        KUBECONFIG: /home/azureuser/.kube/config
+
+    - name: Print Kubernetes nodes
+      debug:
+        var: nodes_output.stdout_lines
+
+    - name: Show kube-system pods
+      command: kubectl get pods -n kube-system -o wide
+      register: kube_system_output
+      environment:
+        KUBECONFIG: /home/azureuser/.kube/config
+
+    - name: Print kube-system pods
+      debug:
+        var: kube_system_output.stdout_lines
